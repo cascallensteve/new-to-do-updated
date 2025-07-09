@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load account socialaccount %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% trans "Sign In" %}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow-lg border-0 rounded-lg">
+        <div class="card-header bg-primary text-white text-center py-4" style="background-color: #1a237e !important;">
+          <h3 class="mb-0">
+            <i class="fas fa-sign-in-alt me-2"></i>
+            {% trans "Sign In" %}
+          </h3>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="progress-steps px-4 pt-4">
+          <div class="d-flex justify-content-between position-relative">
+            <div class="step-item active">
+              <div class="step-circle">1</div>
+              <div class="step-text">Credentials</div>
+            </div>
+            <div class="step-item">
+              <div class="step-circle">2</div>
+              <div class="step-text">Verification</div>
+            </div>
+            <div class="step-item">
+              <div class="step-circle">3</div>
+              <div class="step-text">Review</div>
+            </div>
+            <div class="progress-line"></div>
+          </div>
+        </div>
+
+        <div class="card-body p-4">
+          {% if socialaccount_providers %}
+          <p class="text-center mb-4">
+            {% blocktrans with site.name as site_name %}Please sign in with one of your existing third party accounts. Or, <a href="{{ signup_url }}">sign up</a> for a {{ site_name }} account and sign in below:{% endblocktrans %}
+          </p>
+          <div class="socialaccount_ballot mb-4">
+            <div class="socialaccount_providers text-center">
+              {% include "socialaccount/snippets/provider_list.html" with process="login" %}
+            </div>
+            <div class="login-or border-bottom my-3">
+              <span class="or-text bg-white px-3">{% trans 'or' %}</span>
+            </div>
+          </div>
+          {% endif %}
+
+          <form method="POST" action="{% url 'account_login' %}" class="login" id="loginForm">
+            {% csrf_token %}
+            {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+            {% else %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="/todos/" />
+            {% endif %}
+
+            <!-- Step 1: Credentials -->
+            <div class="form-step" id="step1">
+              <div class="form-floating mb-3">
+                <input type="text" name="login" class="form-control" id="id_login" placeholder="Username or Email" required>
+                <label for="id_login">Username or Email</label>
+              </div>
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary btn-lg next-step" style="background-color: #1a237e; border-color: #1a237e;">
+                  <i class="fas fa-arrow-right me-2"></i>{% trans "Continue" %}
+                </button>
+              </div>
+            </div>
+
+            <!-- Step 2: Password -->
+            <div class="form-step" id="step2" style="display: none;">
+              <div class="form-floating mb-3">
+                <input type="password" name="password" class="form-control" id="id_password" placeholder="Password" required>
+                <label for="id_password">Password</label>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="remember" id="id_remember">
+                <label class="form-check-label" for="id_remember">
+                  {% trans "Remember Me" %}
+                </label>
+              </div>
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary btn-lg next-step" style="background-color: #1a237e; border-color: #1a237e;">
+                  <i class="fas fa-arrow-right me-2"></i>{% trans "Continue" %}
+                </button>
+                <button type="button" class="btn btn-outline-primary prev-step" style="color: #1a237e; border-color: #1a237e;">
+                  <i class="fas fa-arrow-left me-2"></i>{% trans "Back" %}
+                </button>
+              </div>
+            </div>
+
+            <!-- Step 3: Review -->
+            <div class="form-step" id="step3" style="display: none;">
+              <div class="review-info mb-4">
+                <h5 class="mb-3">{% trans "Review Your Information" %}</h5>
+                <div class="review-item mb-2">
+                  <small class="text-muted">Username/Email:</small>
+                  <p class="mb-1" id="review-login"></p>
+                </div>
+                <div class="review-item mb-3">
+                  <small class="text-muted">Remember Me:</small>
+                  <p class="mb-1" id="review-remember"></p>
+                </div>
+              </div>
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg" style="background-color: #1a237e; border-color: #1a237e;">
+                  <i class="fas fa-sign-in-alt me-2"></i>{% trans "Sign In" %}
+                </button>
+                <button type="button" class="btn btn-outline-primary prev-step" style="color: #1a237e; border-color: #1a237e;">
+                  <i class="fas fa-arrow-left me-2"></i>{% trans "Back" %}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="card-footer bg-light py-3">
+          <div class="text-center">
+            <p class="mb-2">
+              <a href="{% url 'account_reset_password' %}" class="text-decoration-none" style="color: #1a237e;">
+                <i class="fas fa-key me-1"></i>{% trans "Forgot Password?" %}
+              </a>
+            </p>
+            <p class="mb-0">
+              {% trans "Don't have an account?" %}
+              <a href="{% url 'account_signup' %}" class="text-decoration-none" style="color: #1a237e;">
+                {% trans "Sign Up" %}
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card {
+    transition: all 0.3s ease-in-out;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important;
+  }
+  .btn {
+    transition: all 0.2s ease-in-out;
+  }
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+  .btn-primary:hover {
+    background-color: #283593 !important;
+    border-color: #283593 !important;
+  }
+  .btn-outline-primary:hover {
+    background-color: #1a237e !important;
+    border-color: #1a237e !important;
+    color: white !important;
+  }
+  .form-step {
+    transition: all 0.3s ease-in-out;
+  }
+  .progress-steps {
+    margin-bottom: 2rem;
+  }
+  .step-item {
+    text-align: center;
+    z-index: 1;
+    flex: 1;
+  }
+  .step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease-in-out;
+  }
+  .step-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    transition: all 0.3s ease-in-out;
+  }
+  .step-item.active .step-circle {
+    background-color: #1a237e;
+    color: white;
+  }
+  .step-item.active .step-text {
+    color: #1a237e;
+    font-weight: 600;
+  }
+  .progress-line {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #e9ecef;
+    z-index: 0;
+  }
+  .review-info {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  .review-item small {
+    font-size: 0.875rem;
+  }
+  .review-item p {
+    font-weight: 500;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('loginForm');
+  const steps = document.querySelectorAll('.form-step');
+  const stepItems = document.querySelectorAll('.step-item');
+  const nextButtons = document.querySelectorAll('.next-step');
+  const prevButtons = document.querySelectorAll('.prev-step');
+  let currentStep = 0;
+
+  function showStep(stepIndex) {
+    steps.forEach((step, index) => {
+      step.style.display = index === stepIndex ? 'block' : 'none';
+    });
+    
+    stepItems.forEach((item, index) => {
+      if (index <= stepIndex) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  }
+
+  function updateReview() {
+    document.getElementById('review-login').textContent = document.getElementById('id_login').value;
+    document.getElementById('review-remember').textContent = document.getElementById('id_remember').checked ? 'Yes' : 'No';
+  }
+
+  nextButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const inputs = steps[currentStep].querySelectorAll('input[required]');
+      let isValid = true;
+      
+      inputs.forEach(input => {
+        if (!input.value) {
+          isValid = false;
+          input.classList.add('is-invalid');
+        } else {
+          input.classList.remove('is-invalid');
+        }
+      });
+
+      if (isValid) {
+        currentStep++;
+        showStep(currentStep);
+        if (currentStep === 2) {
+          updateReview();
+        }
+      }
+    });
+  });
+
+  prevButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      currentStep--;
+      showStep(currentStep);
+    });
+  });
+
+  showStep(currentStep);
+});
+</script>
+{% endblock %} 

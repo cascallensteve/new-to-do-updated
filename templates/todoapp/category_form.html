@@ -1,0 +1,381 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Category{% else %}Create Category{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+    
+    .form-container {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .color-preview {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-left: 1rem;
+        border: 3px solid #fff;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .icon-preview {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin-left: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control {
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+        padding: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .icon-suggestions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .icon-suggestion {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #6c757d;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 1rem;
+    }
+    
+    .icon-suggestion:hover {
+        background: #667eea;
+        transform: scale(1.1);
+    }
+    
+    .btn-save {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        color: white;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        color: white;
+    }
+    
+    .preview-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    
+    .category-preview-card {
+        display: inline-block;
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Form Header -->
+<div class="form-header text-center">
+    <div class="container">
+        <h1 class="mb-3">
+            <i class="fas fa-{% if form.instance.pk %}edit{% else %}plus{% endif %} me-3"></i>
+            {% if form.instance.pk %}Edit Category{% else %}Create New Category{% endif %}
+        </h1>
+        <p class="lead mb-0">
+            {% if form.instance.pk %}
+                Update your category details
+            {% else %}
+                Add a new category to organize your tasks
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="form-container">
+        <!-- Live Preview -->
+        <div class="preview-section">
+            <h6 class="text-muted mb-3">Preview</h6>
+            <div class="category-preview-card" id="categoryPreview">
+                <div class="icon-preview" id="iconPreview" style="background-color: #667eea;">
+                    <i class="fas fa-tasks" id="iconElement"></i>
+                </div>
+                <div class="color-preview" id="colorPreview" style="background-color: #667eea;"></div>
+                <h6 class="mt-2 mb-0" id="namePreview">Category Name</h6>
+            </div>
+        </div>
+
+        <form method="post" id="categoryForm">
+            {% csrf_token %}
+            
+            <!-- Category Name -->
+            <div class="form-group">
+                <label for="id_name" class="form-label">
+                    <i class="fas fa-tag me-2 text-primary"></i>
+                    Category Name
+                </label>
+                <input type="text" 
+                       name="name" 
+                       id="id_name" 
+                       class="form-control" 
+                       placeholder="Enter category name..."
+                       value="{% if form.instance.name %}{{ form.instance.name }}{% endif %}"
+                       required>
+                <small class="form-text text-muted">Choose a descriptive name for your category</small>
+            </div>
+
+            <!-- Category Color -->
+            <div class="form-group">
+                <label for="id_color" class="form-label">
+                    <i class="fas fa-palette me-2 text-primary"></i>
+                    Category Color
+                </label>
+                <div class="d-flex align-items-center">
+                    <input type="color" 
+                           name="color" 
+                           id="id_color" 
+                           class="form-control form-control-color" 
+                           value="{% if form.instance.color %}{{ form.instance.color }}{% else %}#667eea{% endif %}"
+                           style="width: 100px;">
+                    <div class="color-preview" id="colorPreviewSide" style="background-color: {% if form.instance.color %}{{ form.instance.color }}{% else %}#667eea{% endif %};"></div>
+                </div>
+                <small class="form-text text-muted">Pick a color that represents this category</small>
+            </div>
+
+            <!-- Category Icon -->
+            <div class="form-group">
+                <label for="id_icon" class="form-label">
+                    <i class="fas fa-icons me-2 text-primary"></i>
+                    Category Icon
+                </label>
+                <div class="d-flex align-items-center">
+                    <input type="text" 
+                           name="icon" 
+                           id="id_icon" 
+                           class="form-control" 
+                           placeholder="fas fa-tasks"
+                           value="{% if form.instance.icon %}{{ form.instance.icon }}{% else %}fas fa-tasks{% endif %}">
+                    <div class="icon-preview" id="iconPreviewSide" style="background-color: {% if form.instance.color %}{{ form.instance.color }}{% else %}#667eea{% endif %};">
+                        <i class="{% if form.instance.icon %}{{ form.instance.icon }}{% else %}fas fa-tasks{% endif %}" id="iconElementSide"></i>
+                    </div>
+                </div>
+                <small class="form-text text-muted">Use Font Awesome icon classes (e.g., fas fa-home, fas fa-briefcase)</small>
+                
+                <!-- Icon Suggestions -->
+                <div class="icon-suggestions">
+                    <div class="icon-suggestion" data-icon="fas fa-tasks" title="Tasks">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="icon-suggestion" data-icon="fas fa-briefcase" title="Work">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div class="icon-suggestion" data-icon="fas fa-home" title="Home">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="icon-suggestion" data-icon="fas fa-heart" title="Personal">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="icon-suggestion" data-icon="fas fa-graduation-cap" title="Education">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div class="icon-suggestion" data-icon="fas fa-dumbbell" title="Fitness">
+                        <i class="fas fa-dumbbell"></i>
+                    </div>
+                    <div class="icon-suggestion" data-icon="fas fa-shopping-cart" title="Shopping">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="icon-suggestion" data-icon="fas fa-car" title="Travel">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <div class="icon-suggestion" data-icon="fas fa-utensils" title="Food">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <div class="icon-suggestion" data-icon="fas fa-gamepad" title="Entertainment">
+                        <i class="fas fa-gamepad"></i>
+                    </div>
+                    <div class="icon-suggestion" data-icon="fas fa-dollar-sign" title="Finance">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="icon-suggestion" data-icon="fas fa-stethoscope" title="Health">
+                        <i class="fas fa-stethoscope"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="text-center mt-4">
+                <button type="submit" class="btn-save me-3">
+                    <i class="fas fa-save me-2"></i>
+                    {% if form.instance.pk %}Update Category{% else %}Create Category{% endif %}
+                </button>
+                <a href="{% url 'todoapp:category_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('id_name');
+    const colorInput = document.getElementById('id_color');
+    const iconInput = document.getElementById('id_icon');
+    
+    const namePreview = document.getElementById('namePreview');
+    const colorPreview = document.getElementById('colorPreview');
+    const colorPreviewSide = document.getElementById('colorPreviewSide');
+    const iconPreview = document.getElementById('iconPreview');
+    const iconPreviewSide = document.getElementById('iconPreviewSide');
+    const iconElement = document.getElementById('iconElement');
+    const iconElementSide = document.getElementById('iconElementSide');
+    
+    // Update preview in real-time
+    function updatePreview() {
+        const name = nameInput.value || 'Category Name';
+        const color = colorInput.value;
+        const icon = iconInput.value || 'fas fa-tasks';
+        
+        namePreview.textContent = name;
+        
+        colorPreview.style.backgroundColor = color;
+        colorPreviewSide.style.backgroundColor = color;
+        iconPreview.style.backgroundColor = color;
+        iconPreviewSide.style.backgroundColor = color;
+        
+        iconElement.className = icon;
+        iconElementSide.className = icon;
+    }
+    
+    // Event listeners for real-time updates
+    nameInput.addEventListener('input', updatePreview);
+    colorInput.addEventListener('input', updatePreview);
+    iconInput.addEventListener('input', updatePreview);
+    
+    // Icon suggestion clicks
+    const iconSuggestions = document.querySelectorAll('.icon-suggestion');
+    iconSuggestions.forEach(suggestion => {
+        suggestion.addEventListener('click', function() {
+            const iconClass = this.getAttribute('data-icon');
+            iconInput.value = iconClass;
+            updatePreview();
+            
+            // Visual feedback
+            iconSuggestions.forEach(s => s.style.background = '#6c757d');
+            this.style.background = '#667eea';
+        });
+    });
+    
+    // Form validation
+    const form = document.getElementById('categoryForm');
+    form.addEventListener('submit', function(e) {
+        const name = nameInput.value.trim();
+        if (!name) {
+            e.preventDefault();
+            alert('Please enter a category name.');
+            nameInput.focus();
+            return;
+        }
+        
+        if (name.length < 2) {
+            e.preventDefault();
+            alert('Category name must be at least 2 characters long.');
+            nameInput.focus();
+            return;
+        }
+    });
+    
+    // Initialize preview
+    updatePreview();
+    
+    // Highlight current icon if editing
+    {% if form.instance.icon %}
+    const currentIcon = '{{ form.instance.icon }}';
+    iconSuggestions.forEach(suggestion => {
+        if (suggestion.getAttribute('data-icon') === currentIcon) {
+            suggestion.style.background = '#667eea';
+        }
+    });
+    {% endif %}
+    
+    // Add smooth focus animations
+    const inputs = document.querySelectorAll('.form-control');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.style.transform = 'scale(1.02)';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+});
+</script>
+{% endblock %}

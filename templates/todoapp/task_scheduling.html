@@ -1,0 +1,557 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Task Scheduling{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css" rel="stylesheet">
+<style>
+    .scheduling-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+    
+    .task-section {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .task-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-left: 4px solid #007bff;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .task-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .task-item.high { 
+        border-left-color: #dc3545; 
+        background: linear-gradient(135deg, #fff5f5, #ffeaea);
+    }
+    .task-item.medium { 
+        border-left-color: #ffc107; 
+        background: linear-gradient(135deg, #fffbf0, #fff4d6);
+    }
+    .task-item.low { 
+        border-left-color: #28a745; 
+        background: linear-gradient(135deg, #f0fff4, #e8f5e8);
+    }
+    
+    .task-item.overdue {
+        border-left-color: #dc3545;
+        background: linear-gradient(135deg, #fff5f5, #ffe6e6);
+        border: 1px solid #ffcccc;
+    }
+    
+    .task-meta {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    
+    .priority-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+    }
+    
+    .calendar-container {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .quick-add-form {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .time-indicator {
+        font-size: 0.8rem;
+        color: #6c757d;
+        background: #e9ecef;
+        padding: 0.2rem 0.5rem;
+        border-radius: 8px;
+        display: inline-block;
+    }
+    
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1rem;
+        margin-right: 1rem;
+    }
+    
+    .overdue-icon { background: #dc3545; }
+    .today-icon { background: #ffc107; }
+    .week-icon { background: #17a2b8; }
+    .no-date-icon { background: #6c757d; }
+    
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    #calendar {
+        min-height: 500px;
+    }
+    
+    .fc-event {
+        border-radius: 5px;
+        border: none;
+        font-size: 0.85rem;
+    }
+    
+    .stats-row {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .task-actions {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    
+    .task-item:hover .task-actions {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Scheduling Header -->
+<div class="scheduling-header text-center">
+    <div class="container">
+        <h1 class="mb-3">
+            <i class="fas fa-calendar-check me-3"></i>
+            Task Scheduling & Planning
+        </h1>
+        <p class="lead mb-0">Organize your tasks by timeline and priority</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Quick Stats -->
+    <div class="stats-row">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number text-danger">{{ overdue_tasks|length }}</div>
+                    <div class="text-muted">Overdue</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number text-warning">{{ today_tasks|length }}</div>
+                    <div class="text-muted">Due Today</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number text-info">{{ week_tasks|length }}</div>
+                    <div class="text-muted">This Week</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number text-secondary">{{ no_due_date|length }}</div>
+                    <div class="text-muted">No Due Date</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Task Lists -->
+        <div class="col-lg-8">
+            <!-- Overdue Tasks -->
+            {% if overdue_tasks %}
+            <div class="task-section">
+                <h5 class="mb-3 d-flex align-items-center">
+                    <span class="section-icon overdue-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </span>
+                    Overdue Tasks ({{ overdue_tasks|length }})
+                </h5>
+                {% for task in overdue_tasks %}
+                <div class="task-item overdue">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ task.title }}</h6>
+                            {% if task.description %}
+                            <p class="mb-2 text-muted small">{{ task.description|truncatewords:15 }}</p>
+                            {% endif %}
+                            <div class="task-meta">
+                                <span class="time-indicator">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Due: {{ task.due_date|date:"M d, Y g:i A" }}
+                                </span>
+                                {% if task.category %}
+                                <span class="ms-2">
+                                    <i class="fas fa-tag me-1" style="color: {{ task.category.color }}"></i>
+                                    {{ task.category.name }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="priority-badge bg-{{ task.priority|yesno:'danger,warning,success' }} text-white me-2">
+                                {{ task.get_priority_display }}
+                            </span>
+                            <div class="task-actions">
+                                <a href="{% url 'todoapp:todo_update' task.pk %}" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'todoapp:todo_complete' task.pk %}" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Today's Tasks -->
+            <div class="task-section">
+                <h5 class="mb-3 d-flex align-items-center">
+                    <span class="section-icon today-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </span>
+                    Due Today ({{ today_tasks|length }})
+                </h5>
+                {% for task in today_tasks %}
+                <div class="task-item {{ task.priority }}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ task.title }}</h6>
+                            {% if task.description %}
+                            <p class="mb-2 text-muted small">{{ task.description|truncatewords:15 }}</p>
+                            {% endif %}
+                            <div class="task-meta">
+                                <span class="time-indicator">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ task.due_date|date:"g:i A" }}
+                                </span>
+                                {% if task.category %}
+                                <span class="ms-2">
+                                    <i class="fas fa-tag me-1" style="color: {{ task.category.color }}"></i>
+                                    {{ task.category.name }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="priority-badge bg-{{ task.priority|yesno:'danger,warning,success' }} text-white me-2">
+                                {{ task.get_priority_display }}
+                            </span>
+                            <div class="task-actions">
+                                <a href="{% url 'todoapp:todo_update' task.pk %}" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'todoapp:todo_complete' task.pk %}" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <i class="fas fa-calendar-check"></i>
+                    <p>No tasks due today! Great job staying on top of things.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- This Week's Tasks -->
+            <div class="task-section">
+                <h5 class="mb-3 d-flex align-items-center">
+                    <span class="section-icon week-icon">
+                        <i class="fas fa-calendar-week"></i>
+                    </span>
+                    This Week ({{ week_tasks|length }})
+                </h5>
+                {% for task in week_tasks %}
+                <div class="task-item {{ task.priority }}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ task.title }}</h6>
+                            {% if task.description %}
+                            <p class="mb-2 text-muted small">{{ task.description|truncatewords:15 }}</p>
+                            {% endif %}
+                            <div class="task-meta">
+                                <span class="time-indicator">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ task.due_date|date:"M d, Y g:i A" }}
+                                </span>
+                                {% if task.category %}
+                                <span class="ms-2">
+                                    <i class="fas fa-tag me-1" style="color: {{ task.category.color }}"></i>
+                                    {{ task.category.name }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="priority-badge bg-{{ task.priority|yesno:'danger,warning,success' }} text-white me-2">
+                                {{ task.get_priority_display }}
+                            </span>
+                            <div class="task-actions">
+                                <a href="{% url 'todoapp:todo_update' task.pk %}" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'todoapp:todo_complete' task.pk %}" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <i class="fas fa-calendar-week"></i>
+                    <p>No tasks scheduled for this week.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Tasks Without Due Date -->
+            {% if no_due_date %}
+            <div class="task-section">
+                <h5 class="mb-3 d-flex align-items-center">
+                    <span class="section-icon no-date-icon">
+                        <i class="fas fa-clock"></i>
+                    </span>
+                    No Due Date ({{ no_due_date|length }})
+                </h5>
+                {% for task in no_due_date %}
+                <div class="task-item {{ task.priority }}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ task.title }}</h6>
+                            {% if task.description %}
+                            <p class="mb-2 text-muted small">{{ task.description|truncatewords:15 }}</p>
+                            {% endif %}
+                            <div class="task-meta">
+                                <span class="time-indicator">
+                                    <i class="fas fa-plus me-1"></i>
+                                    Created: {{ task.created_at|date:"M d, Y" }}
+                                </span>
+                                {% if task.category %}
+                                <span class="ms-2">
+                                    <i class="fas fa-tag me-1" style="color: {{ task.category.color }}"></i>
+                                    {{ task.category.name }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="priority-badge bg-{{ task.priority|yesno:'danger,warning,success' }} text-white me-2">
+                                {{ task.get_priority_display }}
+                            </span>
+                            <div class="task-actions">
+                                <a href="{% url 'todoapp:todo_update' task.pk %}" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'todoapp:todo_complete' task.pk %}" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Calendar & Quick Add -->
+        <div class="col-lg-4">
+            <!-- Quick Add Form -->
+            <div class="quick-add-form">
+                <h5 class="mb-3">
+                    <i class="fas fa-plus me-2 text-primary"></i>
+                    Quick Add Task
+                </h5>
+                <form method="post" action="{% url 'todoapp:todo_create' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <input type="text" class="form-control" name="title" placeholder="Task title..." required>
+                    </div>
+                    <div class="mb-3">
+                        <textarea class="form-control" name="description" rows="2" placeholder="Description (optional)"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <select class="form-select" name="priority">
+                                <option value="medium">Medium Priority</option>
+                                <option value="high">High Priority</option>
+                                <option value="low">Low Priority</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <input type="datetime-local" class="form-control" name="due_date">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-plus me-1"></i>Add Task
+                    </button>
+                </form>
+            </div>
+
+            <!-- Mini Calendar -->
+            <div class="calendar-container">
+                <h5 class="mb-3">
+                    <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                    Task Calendar
+                </h5>
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js"></script>
+
+<script>
+// Initialize Calendar
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        height: 400,
+        headerToolbar: {
+            left: 'prev,next',
+            center: 'title',
+            right: 'today'
+        },
+        events: [
+            // Overdue tasks
+            {% for task in overdue_tasks %}
+            {
+                title: '⚠️ {{ task.title|escapejs }}',
+                start: '{{ task.due_date|date:"c" }}',
+                backgroundColor: '#dc3545',
+                borderColor: '#dc3545',
+                textColor: 'white'
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+            
+            // Today's tasks
+            {% if overdue_tasks and today_tasks %},{% endif %}
+            {% for task in today_tasks %}
+            {
+                title: '📅 {{ task.title|escapejs }}',
+                start: '{{ task.due_date|date:"c" }}',
+                backgroundColor: '{% if task.priority == "high" %}#dc3545{% elif task.priority == "medium" %}#ffc107{% else %}#28a745{% endif %}',
+                borderColor: '{% if task.priority == "high" %}#dc3545{% elif task.priority == "medium" %}#ffc107{% else %}#28a745{% endif %}',
+                textColor: 'white'
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+            
+            // Week tasks
+            {% if overdue_tasks or today_tasks %}{% if week_tasks %},{% endif %}{% endif %}
+            {% for task in week_tasks %}
+            {
+                title: '{{ task.title|escapejs }}',
+                start: '{{ task.due_date|date:"c" }}',
+                backgroundColor: '{% if task.priority == "high" %}#dc3545{% elif task.priority == "medium" %}#ffc107{% else %}#28a745{% endif %}',
+                borderColor: '{% if task.priority == "high" %}#dc3545{% elif task.priority == "medium" %}#ffc107{% else %}#28a745{% endif %}',
+                textColor: 'white'
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        eventClick: function(info) {
+            // Extract task title without emoji prefix
+            const title = info.event.title.replace(/^[⚠️📅]\s*/, '');
+            alert('Task: ' + title + '\nClick to edit this task.');
+        },
+        selectable: true,
+        select: function(info) {
+            // Set the due date in the quick add form
+            const localDate = new Date(info.start.getTime() - (info.start.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            document.querySelector('input[name="due_date"]').value = localDate;
+            
+            // Focus on the title input
+            document.querySelector('input[name="title"]').focus();
+        }
+    });
+    
+    calendar.render();
+});
+
+// Add some interactive features
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus on quick add form when page loads
+    const titleInput = document.querySelector('input[name="title"]');
+    if (titleInput) {
+        // Small delay to ensure page is fully loaded
+        setTimeout(() => titleInput.focus(), 100);
+    }
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + N for new task
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            e.preventDefault();
+            titleInput.focus();
+        }
+    });
+    
+    // Smooth scrolling for overdue tasks if they exist
+    {% if overdue_tasks %}
+    const overdueSection = document.querySelector('.task-section');
+    if (overdueSection) {
+        overdueSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

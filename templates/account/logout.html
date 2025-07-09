@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Sign Out" %}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow-lg border-0 rounded-lg">
+        <div class="card-header bg-danger text-white text-center py-4">
+          <h3 class="mb-0">{% trans "Sign Out" %}</h3>
+        </div>
+        <div class="card-body p-4 text-center">
+          <div class="mb-4">
+            <i class="fas fa-sign-out-alt text-danger fa-3x mb-3"></i>
+            <p class="lead">{% trans 'Are you sure you want to sign out?' %}</p>
+          </div>
+
+          <form method="post" action="{% url 'account_logout' %}">
+            {% csrf_token %}
+            {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
+            {% endif %}
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-danger btn-lg">
+                <i class="fas fa-sign-out-alt me-2"></i>{% trans 'Sign Out' %}
+              </button>
+              <a href="{% url 'todoapp:todo_list' %}" class="btn btn-outline-secondary btn-lg">
+                <i class="fas fa-times me-2"></i>{% trans 'Cancel' %}
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card {
+    transition: all 0.3s ease-in-out;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important;
+  }
+  .btn {
+    transition: all 0.2s ease-in-out;
+  }
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+</style>
+{% endblock %} 

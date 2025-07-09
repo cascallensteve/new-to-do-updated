@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% trans "Sign Up" %}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow-lg border-0 rounded-lg">
+        <div class="card-header bg-primary text-white text-center py-4" style="background-color: #1a237e !important;">
+          <h3 class="mb-0">
+            <i class="fas fa-user-plus me-2"></i>
+            {% trans "Sign Up" %}
+          </h3>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="progress-steps px-4 pt-4">
+          <div class="d-flex justify-content-between position-relative">
+            <div class="step-item active">
+              <div class="step-circle">1</div>
+              <div class="step-text">Account</div>
+            </div>
+            <div class="step-item">
+              <div class="step-circle">2</div>
+              <div class="step-text">Profile</div>
+            </div>
+            <div class="step-item">
+              <div class="step-circle">3</div>
+              <div class="step-text">Review</div>
+            </div>
+            <div class="progress-line"></div>
+          </div>
+        </div>
+
+        <div class="card-body p-4">
+          <form method="POST" action="{% url 'account_signup' %}" class="signup" id="signupForm">
+            {% csrf_token %}
+            {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+            {% else %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="/todos/" />
+            {% endif %}
+
+            <!-- Step 1: Account Information -->
+            <div class="form-step" id="step1">
+              <div class="form-floating mb-3">
+                <input type="email" name="email" class="form-control" id="id_email" placeholder="Email" required>
+                <label for="id_email">Email</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text" name="username" class="form-control" id="id_username" placeholder="Username" required>
+                <label for="id_username">Username</label>
+              </div>
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary btn-lg next-step" style="background-color: #1a237e; border-color: #1a237e;">
+                  <i class="fas fa-arrow-right me-2"></i>{% trans "Continue" %}
+                </button>
+              </div>
+            </div>
+
+            <!-- Step 2: Password -->
+            <div class="form-step" id="step2" style="display: none;">
+              <div class="form-floating mb-3">
+                <input type="password" name="password1" class="form-control" id="id_password1" placeholder="Password" required>
+                <label for="id_password1">Password</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="password" name="password2" class="form-control" id="id_password2" placeholder="Confirm Password" required>
+                <label for="id_password2">Confirm Password</label>
+              </div>
+              <div class="password-requirements mb-3">
+                <strong>Password requirements:</strong>
+                <ul class="mb-0">
+                  <li>Must contain at least 8 characters</li>
+                  <li>Cannot be too similar to your personal information</li>
+                  <li>Cannot be a commonly used password</li>
+                  <li>Cannot be entirely numeric</li>
+                </ul>
+              </div>
+              <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary btn-lg next-step" style="background-color: #1a237e; border-color: #1a237e;">
+                  <i class="fas fa-arrow-right me-2"></i>{% trans "Continue" %}
+                </button>
+                <button type="button" class="btn btn-outline-primary prev-step" style="color: #1a237e; border-color: #1a237e;">
+                  <i class="fas fa-arrow-left me-2"></i>{% trans "Back" %}
+                </button>
+              </div>
+            </div>
+
+            <!-- Step 3: Review -->
+            <div class="form-step" id="step3" style="display: none;">
+              <div class="review-info mb-4">
+                <h5 class="mb-3">{% trans "Review Your Information" %}</h5>
+                <div class="review-item mb-2">
+                  <small class="text-muted">Email:</small>
+                  <p class="mb-1" id="review-email"></p>
+                </div>
+                <div class="review-item mb-2">
+                  <small class="text-muted">Username:</small>
+                  <p class="mb-1" id="review-username"></p>
+                </div>
+                <div class="review-item mb-3">
+                  <small class="text-muted">Password:</small>
+                  <p class="mb-1">●●●●●●●●</p>
+                </div>
+              </div>
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg" style="background-color: #1a237e; border-color: #1a237e;">
+                  <i class="fas fa-user-plus me-2"></i>{% trans "Sign Up" %}
+                </button>
+                <button type="button" class="btn btn-outline-primary prev-step" style="color: #1a237e; border-color: #1a237e;">
+                  <i class="fas fa-arrow-left me-2"></i>{% trans "Back" %}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="card-footer bg-light py-3">
+          <div class="text-center">
+            <p class="mb-0">
+              {% trans "Already have an account?" %}
+              <a href="{% url 'account_login' %}" class="text-decoration-none" style="color: #1a237e;">
+                {% trans "Sign In" %}
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card {
+    transition: all 0.3s ease-in-out;
+  }
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important;
+  }
+  .btn {
+    transition: all 0.2s ease-in-out;
+  }
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+  .btn-primary:hover {
+    background-color: #283593 !important;
+    border-color: #283593 !important;
+  }
+  .btn-outline-primary:hover {
+    background-color: #1a237e !important;
+    border-color: #1a237e !important;
+    color: white !important;
+  }
+  .form-step {
+    transition: all 0.3s ease-in-out;
+  }
+  .progress-steps {
+    margin-bottom: 2rem;
+  }
+  .step-item {
+    text-align: center;
+    z-index: 1;
+    flex: 1;
+  }
+  .step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease-in-out;
+  }
+  .step-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    transition: all 0.3s ease-in-out;
+  }
+  .step-item.active .step-circle {
+    background-color: #1a237e;
+    color: white;
+  }
+  .step-item.active .step-text {
+    color: #1a237e;
+    font-weight: 600;
+  }
+  .progress-line {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #e9ecef;
+    z-index: 0;
+  }
+  .review-info {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  .review-item small {
+    font-size: 0.875rem;
+  }
+  .review-item p {
+    font-weight: 500;
+  }
+  .password-requirements {
+    font-size: 0.875rem;
+    color: #6c757d;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  .password-requirements ul {
+    padding-left: 1.25rem;
+    margin-top: 0.5rem;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('signupForm');
+  const steps = document.querySelectorAll('.form-step');
+  const stepItems = document.querySelectorAll('.step-item');
+  const nextButtons = document.querySelectorAll('.next-step');
+  const prevButtons = document.querySelectorAll('.prev-step');
+  let currentStep = 0;
+
+  function showStep(stepIndex) {
+    steps.forEach((step, index) => {
+      step.style.display = index === stepIndex ? 'block' : 'none';
+    });
+    
+    stepItems.forEach((item, index) => {
+      if (index <= stepIndex) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  }
+
+  function validatePasswords() {
+    const password1 = document.getElementById('id_password1').value;
+    const password2 = document.getElementById('id_password2').value;
+    
+    if (password1 !== password2) {
+      document.getElementById('id_password2').classList.add('is-invalid');
+      return false;
+    }
+    
+    if (password1.length < 8) {
+      document.getElementById('id_password1').classList.add('is-invalid');
+      return false;
+    }
+    
+    return true;
+  }
+
+  function updateReview() {
+    document.getElementById('review-email').textContent = document.getElementById('id_email').value;
+    document.getElementById('review-username').textContent = document.getElementById('id_username').value;
+  }
+
+  nextButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const inputs = steps[currentStep].querySelectorAll('input[required]');
+      let isValid = true;
+      
+      inputs.forEach(input => {
+        if (!input.value) {
+          isValid = false;
+          input.classList.add('is-invalid');
+        } else {
+          input.classList.remove('is-invalid');
+        }
+      });
+
+      if (currentStep === 1) {
+        isValid = isValid && validatePasswords();
+      }
+
+      if (isValid) {
+        currentStep++;
+        showStep(currentStep);
+        if (currentStep === 2) {
+          updateReview();
+        }
+      }
+    });
+  });
+
+  prevButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      currentStep--;
+      showStep(currentStep);
+    });
+  });
+
+  showStep(currentStep);
+});
+</script>
+{% endblock %} 

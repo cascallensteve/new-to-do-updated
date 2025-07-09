@@ -1,0 +1,717 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Enhanced Dashboard{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css" rel="stylesheet">
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: none;
+        height: 100%;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .chart-container {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        height: 400px;
+    }
+    
+    .calendar-container {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .notes-container {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .priority-bar {
+        height: 8px;
+        border-radius: 4px;
+        margin-top: 0.5rem;
+        transition: width 0.8s ease;
+    }
+    
+    .high-priority { background: linear-gradient(90deg, #ff4757, #ff3838); }
+    .medium-priority { background: linear-gradient(90deg, #ffa502, #ff9500); }
+    .low-priority { background: linear-gradient(90deg, #2ed573, #26de81); }
+    
+    .notes-editor {
+        min-height: 300px;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    
+    .export-buttons {
+        margin-top: 1rem;
+    }
+    
+    .btn-export {
+        margin-right: 0.5rem;
+        border-radius: 25px;
+        padding: 0.5rem 1.5rem;
+    }
+    
+    .task-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border-left: 4px solid #007bff;
+    }
+    
+    .task-item.high { border-left-color: #dc3545; }
+    .task-item.medium { border-left-color: #ffc107; }
+    .task-item.low { border-left-color: #28a745; }
+    
+    #calendar {
+        max-height: 600px;
+    }
+    
+    .fc-event {
+        border-radius: 5px;
+        border: none;
+        font-size: 0.85rem;
+    }
+    
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+        min-height: 0; /* Allow grid items to shrink */
+    }
+    
+    .right-column {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+    
+    .right-column::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .right-column::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+    
+    .right-column::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+    }
+    
+    .right-column::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .right-column {
+            max-height: none;
+            overflow-y: visible;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header text-center">
+    <div class="container">
+        <h1 class="mb-3">
+            <i class="fas fa-tachometer-alt me-3"></i>
+            Enhanced Task Dashboard
+        </h1>
+        <p class="lead mb-0">Track your productivity and manage tasks efficiently</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-primary">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h3 class="mb-1">{{ stats.total }}</h3>
+                <p class="text-muted mb-0">Total Tasks</p>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3 class="mb-1">{{ stats.completed }}</h3>
+                <p class="text-muted mb-0">Completed</p>
+                <small class="text-success">{{ stats.completion_rate|floatformat:1 }}% completion rate</small>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-warning">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3 class="mb-1">{{ stats.pending }}</h3>
+                <p class="text-muted mb-0">Pending</p>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 class="mb-1">{{ stats.overdue }}</h3>
+                <p class="text-muted mb-0">Overdue</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="chart-container">
+                <h5 class="mb-3">
+                    <i class="fas fa-chart-line me-2 text-primary"></i>
+                    Weekly Completion Trend
+                </h5>
+                <canvas id="weeklyChart"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="chart-container">
+                <h5 class="mb-3">
+                    <i class="fas fa-chart-pie me-2 text-primary"></i>
+                    Priority Distribution
+                </h5>
+                <canvas id="priorityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Tasks Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="chart-container">
+                <h5 class="mb-3">
+                    <i class="fas fa-chart-bar me-2 text-primary"></i>
+                    Monthly Task Creation
+                </h5>
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Grid -->
+    <div class="dashboard-grid">
+        <!-- Left Column -->
+        <div>
+            <!-- Calendar Section -->
+            <div class="calendar-container">
+                <h5 class="mb-3">
+                    <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                    Task Calendar
+                    <button class="btn btn-sm btn-primary float-end" onclick="showAddTaskModal()">
+                        <i class="fas fa-plus me-1"></i>Add Task
+                    </button>
+                </h5>
+                <div id="calendar"></div>
+            </div>
+
+            <!-- Notes Section -->
+            <div class="notes-container">
+                <h5 class="mb-3">
+                    <i class="fas fa-sticky-note me-2 text-primary"></i>
+                    Quick Notes
+                </h5>
+                <div contenteditable="true" class="notes-editor" id="notesEditor" placeholder="Write your notes here...">
+                    <!-- Notes content will be loaded here -->
+                </div>
+                <div class="export-buttons">
+                    <button class="btn btn-outline-primary btn-export" onclick="saveNotes()">
+                        <i class="fas fa-save me-1"></i>Save Notes
+                    </button>
+                    <button class="btn btn-outline-success btn-export" onclick="exportToPDF()">
+                        <i class="fas fa-file-pdf me-1"></i>Export PDF
+                    </button>
+                    <button class="btn btn-outline-info btn-export" onclick="exportToWord()">
+                        <i class="fas fa-file-word me-1"></i>Export Word
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-column">
+            <!-- Priority Breakdown -->
+            <div class="stat-card mb-4">
+                <h5 class="mb-3">
+                    <i class="fas fa-exclamation-circle me-2 text-primary"></i>
+                    Priority Breakdown
+                </h5>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>High Priority</span>
+                        <strong>{{ priority_stats.high }}</strong>
+                    </div>
+                    <div class="priority-bar high-priority" style="width: {{ priority_stats.high_percent }}%"></div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Medium Priority</span>
+                        <strong>{{ priority_stats.medium }}</strong>
+                    </div>
+                    <div class="priority-bar medium-priority" style="width: {{ priority_stats.medium_percent }}%"></div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Low Priority</span>
+                        <strong>{{ priority_stats.low }}</strong>
+                    </div>
+                    <div class="priority-bar low-priority" style="width: {{ priority_stats.low_percent }}%"></div>
+                </div>
+            </div>
+
+            <!-- Recent Tasks -->
+            <div class="stat-card mb-4">
+                <h5 class="mb-3">
+                    <i class="fas fa-history me-2 text-primary"></i>
+                    Recent Tasks
+                </h5>
+                {% for task in recent_tasks %}
+                <div class="task-item {{ task.priority }}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">{{ task.title }}</h6>
+                            <small class="text-muted">{{ task.created_at|timesince }} ago</small>
+                        </div>
+                        <span class="badge bg-{{ task.priority|yesno:'danger,warning,success' }}">
+                            {{ task.get_priority_display }}
+                        </span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center py-3">No recent tasks</p>
+                {% endfor %}
+            </div>
+
+            <!-- Upcoming Tasks -->
+            <div class="stat-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-clock me-2 text-primary"></i>
+                    Upcoming Tasks
+                </h5>
+                {% for task in upcoming_tasks %}
+                <div class="task-item {{ task.priority }}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">{{ task.title }}</h6>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>
+                                {{ task.due_date|date:"M d, Y" }}
+                            </small>
+                        </div>
+                        <span class="badge bg-{{ task.priority|yesno:'danger,warning,success' }}">
+                            {{ task.get_priority_display }}
+                        </span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center py-3">No upcoming tasks</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal fade" id="addTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addTaskForm">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="taskTitle" class="form-label">Task Title</label>
+                        <input type="text" class="form-control" id="taskTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="taskDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="taskDescription" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="taskPriority" class="form-label">Priority</label>
+                            <select class="form-select" id="taskPriority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="taskDueDate" class="form-label">Due Date</label>
+                            <input type="datetime-local" class="form-control" id="taskDueDate">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+// Chart.js configurations
+const chartColors = {
+    primary: '#667eea',
+    success: '#28a745',
+    warning: '#ffc107',
+    danger: '#dc3545',
+    info: '#17a2b8'
+};
+
+// Weekly Completion Chart
+const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+const weeklyChart = new Chart(weeklyCtx, {
+    type: 'line',
+    data: {
+        labels: [{% for day in weekly_completion %}'{{ day.date }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Tasks Completed',
+            data: [{% for day in weekly_completion %}{{ day.completed }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            borderColor: chartColors.primary,
+            backgroundColor: chartColors.primary + '20',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: chartColors.primary,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: '#f0f0f0'
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        }
+    }
+});
+
+// Priority Distribution Chart
+const priorityCtx = document.getElementById('priorityChart').getContext('2d');
+const priorityChart = new Chart(priorityCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['High', 'Medium', 'Low'],
+        datasets: [{
+            data: [{{ priority_stats.high }}, {{ priority_stats.medium }}, {{ priority_stats.low }}],
+            backgroundColor: [chartColors.danger, chartColors.warning, chartColors.success],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Monthly Tasks Chart
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+const monthlyChart = new Chart(monthlyCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for month in monthly_tasks %}'{{ month.month }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Tasks Created',
+            data: [{% for month in monthly_tasks %}{{ month.tasks }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: chartColors.info + '80',
+            borderColor: chartColors.info,
+            borderWidth: 2,
+            borderRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: '#f0f0f0'
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        }
+    }
+});
+
+// FullCalendar initialization
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        selectable: true,
+        select: function(info) {
+            showAddTaskModal(info.start);
+        },
+        events: [
+            {% for task in upcoming_tasks %}
+            {
+                title: '{{ task.title|escapejs }}',
+                start: '{{ task.due_date|date:"c" }}',
+                backgroundColor: '{% if task.priority == "high" %}#dc3545{% elif task.priority == "medium" %}#ffc107{% else %}#28a745{% endif %}',
+                borderColor: '{% if task.priority == "high" %}#dc3545{% elif task.priority == "medium" %}#ffc107{% else %}#28a745{% endif %}'
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        eventClick: function(info) {
+            alert('Task: ' + info.event.title);
+        }
+    });
+    calendar.render();
+    
+    // Store calendar reference globally
+    window.todoCalendar = calendar;
+});
+
+// Modal and form handling
+function showAddTaskModal(date = null) {
+    if (date) {
+        const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+        document.getElementById('taskDueDate').value = localDate;
+    }
+    new bootstrap.Modal(document.getElementById('addTaskModal')).show();
+}
+
+document.getElementById('addTaskForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    formData.append('title', document.getElementById('taskTitle').value);
+    formData.append('description', document.getElementById('taskDescription').value);
+    formData.append('priority', document.getElementById('taskPriority').value);
+    formData.append('due_date', document.getElementById('taskDueDate').value);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    fetch('/todos/create/', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            // Close modal and reload page
+            bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide();
+            location.reload();
+        } else {
+            alert('Error creating task');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error creating task');
+    });
+});
+
+// Notes functionality
+function saveNotes() {
+    const content = document.getElementById('notesEditor').innerHTML;
+    
+    fetch('/todos/api/notes/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({ content: content })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check me-1"></i>Saved!';
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-success');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-primary');
+            }, 2000);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving notes:', error);
+        alert('Error saving notes');
+    });
+}
+
+function loadNotes() {
+    fetch('/todos/api/notes/')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('notesEditor').innerHTML = data.content;
+    })
+    .catch(error => {
+        console.error('Error loading notes:', error);
+    });
+}
+
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const content = document.getElementById('notesEditor').innerText;
+    
+    doc.setFontSize(16);
+    doc.text('Dashboard Notes', 20, 20);
+    doc.setFontSize(12);
+    
+    const lines = doc.splitTextToSize(content, 170);
+    doc.text(lines, 20, 40);
+    
+    doc.save('dashboard-notes.pdf');
+    
+    // Show success message
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check me-1"></i>Exported!';
+    btn.classList.remove('btn-outline-success');
+    btn.classList.add('btn-success');
+    
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-success');
+    }, 2000);
+}
+
+function exportToWord() {
+    const content = document.getElementById('notesEditor').innerText;
+    const blob = new Blob([content], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'dashboard-notes.doc';
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    // Show success message
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check me-1"></i>Exported!';
+    btn.classList.remove('btn-outline-info');
+    btn.classList.add('btn-info');
+    
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.classList.remove('btn-info');
+        btn.classList.add('btn-outline-info');
+    }, 2000);
+}
+
+// Load notes on page load
+document.addEventListener('DOMContentLoaded', loadNotes);
+
+// Auto-save notes every 30 seconds
+setInterval(saveNotes, 30000);
+</script>
+{% endblock %}

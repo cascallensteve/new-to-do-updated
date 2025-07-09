@@ -1,0 +1,496 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Tasks{% endblock %}
+
+{% block extra_css %}
+<style>
+    .todo-card {
+        margin-bottom: 1.5rem;
+        transition: transform 0.2s;
+    }
+    .todo-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .todo-card .card-body {
+        padding: 1.5rem;
+    }
+    .todo-title {
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    .todo-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    .todo-meta {
+        font-size: 0.85rem;
+        color: #8e9aaf;
+    }
+    .priority-high {
+        border-left: 4px solid #dc3545;
+    }
+    .priority-medium {
+        border-left: 4px solid #ffc107;
+    }
+    .priority-low {
+        border-left: 4px solid #28a745;
+    }
+    .completed {
+        opacity: 0.7;
+    }
+    .completed .todo-title {
+        text-decoration: line-through;
+    }
+    .progress {
+        height: 0.5rem;
+        margin-top: 1rem;
+    }
+    .tag {
+        font-size: 0.8rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 1rem;
+        background-color: #e9ecef;
+        color: #495057;
+        margin-right: 0.5rem;
+    }
+    .filter-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin-bottom: 2rem;
+    }
+    .stats-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        margin-bottom: 1rem;
+    }
+    .search-container {
+        position: relative;
+    }
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 0.375rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        z-index: 1000;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .bulk-actions {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+        display: none;
+    }
+    .task-checkbox {
+        margin-right: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Dashboard -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <h3 class="mb-0">{{ stats.total }}</h3>
+                <small>Total Tasks</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">{{ stats.completed }}</h3>
+                <small>Completed</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">{{ stats.pending }}</h3>
+                <small>Pending</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">{{ stats.overdue }}</h3>
+                <small>Overdue</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Header and Controls -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h1 class="h3 mb-0">My Tasks</h1>
+    </div>
+    <div class="col-md-6 text-md-end">
+        <div class="btn-group me-2">
+            <a href="{% url 'todoapp:dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-chart-pie me-1"></i> Dashboard
+            </a>
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-download me-1"></i> Export
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'todoapp:export' %}?format=csv">Export as CSV</a></li>
+                    <li><a class="dropdown-item" href="{% url 'todoapp:export' %}?format=json">Export as JSON</a></li>
+                </ul>
+            </div>
+        </div>
+        <a href="{% url 'todoapp:todo_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Add New Task
+        </a>
+    </div>
+</div>
+
+<!-- Advanced Filtering -->
+<div class="card filter-card">
+    <div class="card-body">
+        <h5 class="card-title mb-3">
+            <i class="fas fa-filter me-2"></i>Search & Filter Tasks
+        </h5>
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <div class="search-container">
+                    <input type="text" class="form-control" name="search" value="{{ search_query }}" 
+                           placeholder="Search tasks..." id="searchInput">
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="archived" {% if current_status == 'archived' %}selected{% endif %}>Archived</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="priority" class="form-select">
+                    <option value="">All Priorities</option>
+                    <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High</option>
+                    <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium</option>
+                    <option value="low" {% if current_priority == 'low' %}selected{% endif %}>Low</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="category" class="form-select">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}" {% if current_category == category.id|stringformat:"s" %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-light w-100">
+                    <i class="fas fa-search me-1"></i>Filter
+                </button>
+            </div>
+        </form>
+        
+        <!-- Quick Filters -->
+        <div class="mt-3">
+            <small class="text-light d-block mb-2">Quick Filters:</small>
+            <a href="?due=today" class="btn btn-sm btn-outline-light me-2">Due Today</a>
+            <a href="?due=week" class="btn btn-sm btn-outline-light me-2">This Week</a>
+            <a href="?due=overdue" class="btn btn-sm btn-outline-light me-2">Overdue</a>
+            <a href="?" class="btn btn-sm btn-outline-light">Clear All</a>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Actions Panel -->
+<div class="bulk-actions" id="bulkActions">
+    <form id="bulkForm">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-md-6">
+                <span class="selected-count">0 tasks selected</span>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-success" onclick="bulkAction('mark_completed')">
+                        <i class="fas fa-check"></i> Mark Complete
+                    </button>
+                    <button type="button" class="btn btn-sm btn-warning" onclick="bulkAction('mark_pending')">
+                        <i class="fas fa-clock"></i> Mark Pending
+                    </button>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="bulkAction('archive')">
+                        <i class="fas fa-archive"></i> Archive
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="bulkAction('delete')">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        {% if todos %}
+            {% for todo in todos %}
+                <div class="card todo-card {% if todo.completed %}completed{% endif %} priority-{{ todo.priority|lower }}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="d-flex align-items-start w-100">
+                                <input type="checkbox" class="task-checkbox" value="{{ todo.id }}" onchange="updateBulkActions()">
+                                <div class="flex-grow-1">
+                                    <h5 class="todo-title">{{ todo.title }}</h5>
+                                    <div class="todo-description mb-2">{{ todo.description|safe }}</div>
+                                    <div class="todo-meta">
+                                        <span class="badge bg-{{ todo.priority }}-priority me-2">
+                                            {{ todo.get_priority_display }}
+                                        </span>
+                                        <span class="badge bg-{{ todo.status }}-status me-2">
+                                            {{ todo.get_status_display }}
+                                        </span>
+                                        {% if todo.due_date %}
+                                        <span class="me-3">
+                                            <i class="far fa-calendar me-1"></i>
+                                            Due: {{ todo.due_date|date:"M d, Y" }}
+                                            {% if todo.due_date < now and not todo.completed %}
+                                                <span class="badge bg-danger ms-1">Overdue</span>
+                                            {% endif %}
+                                        </span>
+                                        {% endif %}
+                                        {% if todo.category %}
+                                        <span class="me-3">
+                                            <i class="fas fa-layer-group me-1"></i>
+                                            {{ todo.category }}
+                                        </span>
+                                        {% endif %}
+                                        {% if todo.tags.all %}
+                                            {% for tag in todo.tags.all %}
+                                                <span class="tag">{{ tag }}</span>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="btn-group">
+                                {% if not todo.completed %}
+                                <form method="post" action="{% url 'todoapp:todo_complete' todo.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Mark Complete">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                                {% else %}
+                                <form method="post" action="{% url 'todoapp:todo_complete' todo.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Mark Incomplete">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <a href="{% url 'todoapp:todo_update' todo.pk %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'todoapp:todo_delete' todo.pk %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% if todo.progress and todo.progress > 0 %}
+                        <div class="progress mt-3">
+                            <div class="progress-bar" role="progressbar" style="width: {{ todo.progress }}%"
+                                 aria-valuenow="{{ todo.progress }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ todo.progress }}%
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Tasks pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{{ request.GET.urlencode|add:"&" }}">First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ request.GET.urlencode|add:"&" }}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ request.GET.urlencode|add:"&" }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{{ request.GET.urlencode|add:"&" }}">Last</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                    <h5>No tasks yet</h5>
+                    <p class="text-muted">Create your first task to get started!</p>
+                    <a href="{% url 'todoapp:todo_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i> Add Task
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Bulk operations functionality
+function updateBulkActions() {
+    const checkboxes = document.querySelectorAll('.task-checkbox:checked');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.querySelector('.selected-count');
+    
+    if (checkboxes.length > 0) {
+        bulkActions.style.display = 'block';
+        selectedCount.textContent = `${checkboxes.length} task${checkboxes.length > 1 ? 's' : ''} selected`;
+    } else {
+        bulkActions.style.display = 'none';
+    }
+}
+
+function bulkAction(action) {
+    const checkboxes = document.querySelectorAll('.task-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('Please select tasks first');
+        return;
+    }
+    
+    if (action === 'delete' && !confirm('Are you sure you want to delete the selected tasks?')) {
+        return;
+    }
+    
+    const taskIds = Array.from(checkboxes).map(cb => cb.value);
+    const formData = new FormData();
+    formData.append('action', action);
+    taskIds.forEach(id => formData.append('task_ids', id));
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    fetch('{% url "todoapp:bulk_operations" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred');
+    });
+}
+
+// Live search functionality
+let searchTimeout;
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    clearTimeout(searchTimeout);
+    const query = e.target.value.trim();
+    
+    if (query.length < 2) {
+        document.getElementById('searchResults').innerHTML = '';
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        fetch(`{% url "todoapp:search_api" %}?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            const resultsDiv = document.getElementById('searchResults');
+            if (data.results.length > 0) {
+                resultsDiv.innerHTML = data.results.map(todo => `
+                    <div class="p-2 border-bottom">
+                        <strong>${todo.title}</strong>
+                        <small class="text-muted d-block">
+                            ${todo.priority} priority • ${todo.status}
+                            ${todo.due_date ? '• Due: ' + todo.due_date : ''}
+                        </small>
+                    </div>
+                `).join('');
+            } else {
+                resultsDiv.innerHTML = '<div class="p-2 text-muted">No results found</div>';
+            }
+        })
+        .catch(error => console.error('Search error:', error));
+    }, 300);
+});
+
+// Hide search results when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-container')) {
+        document.getElementById('searchResults').innerHTML = '';
+    }
+});
+
+// Select all checkbox functionality
+function toggleSelectAll() {
+    const checkboxes = document.querySelectorAll('.task-checkbox');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(cb => cb.checked = !allChecked);
+    updateBulkActions();
+}
+
+// Add keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'a') {
+        e.preventDefault();
+        toggleSelectAll();
+    }
+    if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        document.getElementById('searchInput').focus();
+    }
+});
+
+// Initialize tooltips if Bootstrap is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof bootstrap !== 'undefined') {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+});
+</script>
+{% endblock %} 
