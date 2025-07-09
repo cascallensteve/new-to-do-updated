@@ -100,19 +100,17 @@ TEMPLATES = [
 WSGI_APPLICATION = 'todoproject.wsgi.application'
 ASGI_APPLICATION = 'todoproject.asgi.application'
 
-# Database Configuration
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
+# Database Configuration - Supabase
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'postgres'),
+        'USER': os.environ.get('DB_USER', 'postgres.wsyhgstkjfwsbnzfcpaw'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'Stevoh@Stevoh2020.'),
+        'HOST': os.environ.get('DB_HOST', 'aws-0-eu-north-1.pooler.supabase.com'),
+        'PORT': os.environ.get('DB_PORT', '6543'),
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
