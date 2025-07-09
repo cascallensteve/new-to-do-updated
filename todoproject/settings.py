@@ -14,7 +14,6 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
-import dj_database_url
 
 # Load environment variables from .env file
 load_dotenv()
@@ -88,7 +87,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'todoproject.wsgi.application'
 
 # Database Configuration - Supabase PostgreSQL
-# Force PostgreSQL configuration for Vercel
+# Force PostgreSQL configuration for Vercel - Override any environment settings
+import dj_database_url
+import sys
+
+# Clear any existing database configuration
+if 'DATABASE_URL' in os.environ:
+    del os.environ['DATABASE_URL']
+
+# Force PostgreSQL configuration
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -102,6 +109,9 @@ DATABASES = {
         }
     }
 }
+
+# Debug: Print database engine to verify
+print(f"Database engine: {DATABASES['default']['ENGINE']}", file=sys.stderr)
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
