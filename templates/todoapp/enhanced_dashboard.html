@@ -278,7 +278,7 @@
                     <!-- Notes content will be loaded here -->
                 </div>
                 <div class="export-buttons">
-                    <button class="btn btn-outline-primary btn-export" onclick="saveNotes()">
+                    <button class="btn btn-outline-primary btn-export" onclick="saveNotes(this)">
                         <i class="fas fa-save me-1"></i>Save Notes
                     </button>
                     <button class="btn btn-outline-success btn-export" onclick="exportToPDF()">
@@ -611,7 +611,7 @@ document.getElementById('addTaskForm').addEventListener('submit', function(e) {
 });
 
 // Notes functionality
-function saveNotes() {
+function saveNotes(buttonElement) {
     const content = document.getElementById('notesEditor').innerHTML;
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
     
@@ -639,19 +639,19 @@ function saveNotes() {
         console.log('Response data:', data);
         if (data.success) {
             // Show success message
-            const btn = event.target;
-            if (btn) {
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check me-1"></i>Saved!';
-                btn.classList.remove('btn-outline-primary');
-                btn.classList.add('btn-success');
+            if (buttonElement) {
+                const originalText = buttonElement.innerHTML;
+                buttonElement.innerHTML = '<i class="fas fa-check me-1"></i>Saved!';
+                buttonElement.classList.remove('btn-outline-primary');
+                buttonElement.classList.add('btn-success');
                 
                 setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.classList.remove('btn-success');
-                    btn.classList.add('btn-outline-primary');
+                    buttonElement.innerHTML = originalText;
+                    buttonElement.classList.remove('btn-success');
+                    buttonElement.classList.add('btn-outline-primary');
                 }, 2000);
             }
+            console.log('Notes saved successfully!');
         } else {
             console.error('Save failed:', data.error);
             alert('Error saving notes: ' + (data.error || 'Unknown error'));
