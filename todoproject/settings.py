@@ -31,14 +31,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-your-secret-ke
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['to-do-list-xabt.onrender.com', 'localhost', '127.0.0.1', '.vercel.app']
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-
-# Add current domain to ALLOWED_HOSTS if running on Vercel
-if os.environ.get('VERCEL_URL'):
-    ALLOWED_HOSTS.append(os.environ.get('VERCEL_URL'))
+ALLOWED_HOSTS = ['*']  # Allow all hosts for serverless deployment
 
 # Application definition
 INSTALLED_APPS = [
@@ -58,11 +51,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'rest_framework',
-    'corsheaders',
-    'channels',
-    'django_filters',
     'widget_tweaks',
-    'notifications',
     'ckeditor',
 ]
 
@@ -70,7 +59,6 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -98,17 +86,12 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'todoproject.wsgi.application'
-ASGI_APPLICATION = 'todoproject.asgi.application'
 
-# Database Configuration - Supabase
+# Database Configuration - Use SQLite for Vercel
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'postgres'),
-        'USER': os.environ.get('DB_USER', 'postgres.wsyhgstkjfwsbnzfcpaw'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'Stevoh@Stevoh2020.'),
-        'HOST': os.environ.get('DB_HOST', 'aws-0-eu-north-1.pooler.supabase.com'),
-        'PORT': os.environ.get('DB_PORT', '6543'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -220,20 +203,7 @@ REST_FRAMEWORK = {
     ],
 }
 
-# CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = True
-
-# Channels Configuration
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer'
-    },
-}
-
-# Notifications Configuration
-DJANGO_NOTIFICATIONS_CONFIG = {
-    'USE_JSONFIELD': True,
-}
+# Simplified configuration for Vercel
 
 # Security settings for production
 if not DEBUG:
