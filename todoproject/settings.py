@@ -88,14 +88,18 @@ TEMPLATES = [
 WSGI_APPLICATION = 'todoproject.wsgi.application'
 
 # Database Configuration - Supabase PostgreSQL
+# Force PostgreSQL configuration for Vercel
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'postgres'),
-        'USER': os.environ.get('DB_USER', 'postgres.wsyhgstkjfwsbnzfcpaw'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'Stevoh@Stevoh2020.'),
-        'HOST': os.environ.get('DB_HOST', 'aws-0-eu-north-1.pooler.supabase.com'),
-        'PORT': os.environ.get('DB_PORT', '6543'),
+        'NAME': 'postgres',
+        'USER': 'postgres.wsyhgstkjfwsbnzfcpaw',
+        'PASSWORD': 'Stevoh@Stevoh2020.',
+        'HOST': 'aws-0-eu-north-1.pooler.supabase.com',
+        'PORT': '6543',
+        'OPTIONS': {
+            'connect_timeout': 60,
+        }
     }
 }
 
