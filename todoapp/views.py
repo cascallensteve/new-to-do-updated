@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, View, TemplateView
 from django.urls import reverse_lazy
-from .models import Todo, Category, Comment, TaskActivity
+from .models import Todo, Category, Comment, TaskActivity, Note, Alert
 from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin
 from crispy_forms.helper import FormHelper
@@ -635,7 +635,6 @@ class TaskStatsAPIView(LoginRequiredMixin, View):
 
 class NotesAPIView(LoginRequiredMixin, View):
     def get(self, request):
-        from .models import Note
         note, created = Note.objects.get_or_create(
             user=request.user,
             title='Dashboard Notes',
@@ -647,26 +646,31 @@ class NotesAPIView(LoginRequiredMixin, View):
         })
     
     def post(self, request):
-        from .models import Note
         import json
         
-        data = json.loads(request.body)
-        content = data.get('content', '')
-        
-        note, created = Note.objects.get_or_create(
-            user=request.user,
-            title='Dashboard Notes',
-            defaults={'content': content}
-        )
-        
-        if not created:
-            note.content = content
-            note.save()
-        
-        return JsonResponse({
-            'success': True,
-            'updated_at': note.updated_at.isoformat()
-        })
+        try:
+            data = json.loads(request.body)
+            content = data.get('content', '')
+            
+            note, created = Note.objects.get_or_create(
+                user=request.user,
+                title='Dashboard Notes',
+                defaults={'content': content}
+            )
+            
+            if not created:
+                note.content = content
+                note.save()
+            
+            return JsonResponse({
+                'success': True,
+                'updated_at': note.updated_at.isoformat()
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
 
 class AlertService:
     @staticmethod
