@@ -36,6 +36,10 @@ RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
+# Add current domain to ALLOWED_HOSTS if running on Vercel
+if os.environ.get('VERCEL_URL'):
+    ALLOWED_HOSTS.append(os.environ.get('VERCEL_URL'))
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -97,16 +101,18 @@ WSGI_APPLICATION = 'todoproject.wsgi.application'
 ASGI_APPLICATION = 'todoproject.asgi.application'
 
 # Database Configuration
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres.wsyhgstkjfwsbnzfcpaw',
-        'PASSWORD': 'Stevoh@Stevoh2020.',
-        'HOST': 'aws-0-eu-north-1.pooler.supabase.com',
-        'PORT': '6543',
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -140,7 +146,8 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Vercel-specific static files configuration
-STATICFILES_DIRS.append(BASE_DIR / 'staticfiles_build' / 'static')
+if os.path.exists(BASE_DIR / 'staticfiles_build' / 'static'):
+    STATICFILES_DIRS.append(BASE_DIR / 'staticfiles_build' / 'static')
 
 # Media files
 MEDIA_URL = '/media/'
