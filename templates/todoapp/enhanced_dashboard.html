@@ -638,7 +638,7 @@ function saveNotes(buttonElement) {
     .then(data => {
         console.log('Response data:', data);
         if (data.success) {
-            // Show success message
+            // Show success message only if button element is provided (manual save)
             if (buttonElement) {
                 const originalText = buttonElement.innerHTML;
                 buttonElement.innerHTML = '<i class="fas fa-check me-1"></i>Saved!';
@@ -650,8 +650,10 @@ function saveNotes(buttonElement) {
                     buttonElement.classList.remove('btn-success');
                     buttonElement.classList.add('btn-outline-primary');
                 }, 2000);
+                console.log('Notes saved manually!');
+            } else {
+                console.log('Notes auto-saved successfully!');
             }
-            console.log('Notes saved successfully!');
         } else {
             console.error('Save failed:', data.error);
             alert('Error saving notes: ' + (data.error || 'Unknown error'));
@@ -736,6 +738,6 @@ function exportToWord() {
 document.addEventListener('DOMContentLoaded', loadNotes);
 
 // Auto-save notes every 30 seconds
-setInterval(saveNotes, 30000);
+setInterval(() => saveNotes(), 30000);
 </script>
 {% endblock %}
