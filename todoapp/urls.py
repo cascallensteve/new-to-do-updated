@@ -37,4 +37,8 @@ urlpatterns = [
     path('api/stats/', views.TaskStatsAPIView.as_view(), name='task_stats_api'),
     path('api/notes/', views.NotesAPIView.as_view(), name='notes_api'),
     path('api/alerts/', views.AlertAPIView.as_view(), name='alerts_api'),
+    
+    # Password reset with 6-digit codes
+    path('password-reset/', views.password_reset_request, name='password_reset_request'),
+    path('password-reset/verify/', views.password_reset_verify, name='password_reset_verify'),
 ] 

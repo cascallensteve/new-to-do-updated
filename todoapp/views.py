@@ -806,4 +806,84 @@ class AlertAPIView(LoginRequiredMixin, View):
             minutes = diff.seconds // 60
             return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
         else:
-            return "Just now" 
+            return "Just now"
+
+# Password Reset Views
+from django.contrib.auth import get_user_model
+from .models import PasswordResetCode
+from .adapters import CustomAccountAdapter
+from django.contrib.auth.forms import SetPasswordForm
+
+User = get_user_model()
+
+class PasswordResetRequestForm(forms.Form):
+    email = forms.EmailField(
+        max_length=254,
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Enter your email address'})
+    )
+
+class PasswordResetCodeForm(forms.Form):
+    code = forms.CharField(
+        max_length=6,
+        min_length=6,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter 6-digit code'})
+    )
+    new_password1 = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'New password'})
+    )
+    new_password2 = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm new password'})
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get('new_password1')
+        password2 = cleaned_data.get('new_password2')
+
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError("Passwords don't match")
+
+        return cleaned_data
+
+def password_reset_request(request):
+    if request.method == 'POST':
+        form = PasswordResetRequestForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            try:
+                user = User.objects.get(email=email)
+                adapter = CustomAccountAdapter()
+                adapter.send_password_reset_code(user)
+                messages.success(request, f'Password reset code sent to {email}')
+                return redirect('password_reset_verify')
+            except User.DoesNotExist:
+                messages.error(request, 'No account found with that email address.')
+    else:
+        form = PasswordResetRequestForm()
+    
+    return render(request, 'account/password_reset_request.html', {'form': form})
+
+def password_reset_verify(request):
+    if request.method == 'POST':
+        form = PasswordResetCodeForm(request.POST)
+        if form.is_valid():
+            code = form.cleaned_data['code']
+            new_password = form.cleaned_data['new_password1']
+            
+            try:
+                reset_code = PasswordResetCode.objects.get(code=code, is_used=False)
+                if reset_code.is_valid():
+                    user = reset_code.user
+                    user.set_password(new_password)
+                    user.save()
+                    reset_code.use_code()
+                    messages.success(request, 'Password reset successful! You can now log in with your new password.')
+                    return redirect('account_login')
+                else:
+                    messages.error(request, 'Invalid or expired code.')
+            except PasswordResetCode.DoesNotExist:
+                messages.error(request, 'Invalid code.')
+    else:
+        form = PasswordResetCodeForm()
+    
+    return render(request, 'account/password_reset_verify.html', {'form': form}) 

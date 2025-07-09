@@ -6,6 +6,8 @@ from colorfield.fields import ColorField
 from django.utils import timezone
 from ckeditor.fields import RichTextField
 from django.core.validators import MinValueValidator, MaxValueValidator
+import random
+import string
 
 User = get_user_model()
 
@@ -185,4 +187,41 @@ class Alert(models.Model):
     
     class Meta:
         ordering = ['-created_at']
-        unique_together = ['user', 'todo', 'alert_type'] 
+        unique_together = ['user', 'todo', 'alert_type']
+
+class PasswordResetCode(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    
+    @classmethod
+    def generate_code(cls, user):
+        # Generate 6-digit random code
+        code = ''.join(random.choices(string.digits, k=6))
+        expires_at = timezone.now() + timezone.timedelta(minutes=15)  # 15-minute expiry
+        
+        # Delete any existing unused codes for this user
+        cls.objects.filter(user=user, is_used=False).delete()
+        
+        # Create new code
+        reset_code = cls.objects.create(
+            user=user,
+            code=code,
+            expires_at=expires_at
+        )
+        return reset_code
+    
+    def is_valid(self):
+        return not self.is_used and timezone.now() < self.expires_at
+    
+    def use_code(self):
+        self.is_used = True
+        self.save()
+    
+    def __str__(self):
+        return f"Reset code for {self.user.username}: {self.code}"
+    
+    class Meta:
+        ordering = ['-created_at'] 
