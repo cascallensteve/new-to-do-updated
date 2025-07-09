@@ -87,11 +87,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'todoproject.wsgi.application'
 
-# Database Configuration - Use SQLite for Vercel
+# Database Configuration - Supabase PostgreSQL
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'postgres'),
+        'USER': os.environ.get('DB_USER', 'postgres.wsyhgstkjfwsbnzfcpaw'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'Stevoh@Stevoh2020.'),
+        'HOST': os.environ.get('DB_HOST', 'aws-0-eu-north-1.pooler.supabase.com'),
+        'PORT': os.environ.get('DB_PORT', '6543'),
     }
 }
 
